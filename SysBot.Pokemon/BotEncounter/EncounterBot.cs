@@ -50,6 +50,7 @@ namespace SysBot.Pokemon
                 EncounterMode.HorizontalLine => WalkInLine(token),
                 EncounterMode.Eternatus => DoEternatusEncounter(token),
                 EncounterMode.LegendaryDogs => DoDogEncounter(token),
+                EncounterMode.StrongSpawn => DoStrongSpawnEncounter(token),
                 _ => WalkInLine(token),
             };
             await task.ConfigureAwait(false);
@@ -62,9 +63,6 @@ namespace SysBot.Pokemon
         {
             while (!token.IsCancellationRequested)
             {
-                if (Hub.Config.Encounter.StrongSpawn)
-                    await StrongSpawn(token).ConfigureAwait(false);
-
                 var attempts = await StepUntilEncounter(token).ConfigureAwait(false);
                 if (attempts < 0) // aborted
                     continue;
@@ -93,7 +91,7 @@ namespace SysBot.Pokemon
                     return;
 
                 Log("Running away...");
-                while (await IsInBattle(token).ConfigureAwait(false) && !Hub.Config.Encounter.StrongSpawn)
+                while (await IsInBattle(token).ConfigureAwait(false))
                     await FleeToOverworld(token).ConfigureAwait(false);
             }
         }
@@ -229,14 +227,14 @@ namespace SysBot.Pokemon
 
             if (StopConditionSettings.EncounterFound(pk, DesiredIVs, Hub.Config.StopConditions))
             {
-                Log(!Hub.Config.StopConditions.CatchEncounter ? $"{Ping}Result found! Stopping routine execution; restart the bot(s) to search again." : "Result found! Attempting to catch...");
+                Log(!Hub.Config.StopConditions.CatchEncounter || Hub.Config.Encounter.EncounteringType == EncounterMode.StrongSpawn ? $"{Ping}Result found! Stopping routine execution; restart the bot(s) to search again." : "Result found! Attempting to catch...");
                 if (Hub.Config.StopConditions.CaptureVideoClip)
                 {
                     await Task.Delay(Hub.Config.StopConditions.ExtraTimeWaitCaptureVideo).ConfigureAwait(false);
                     await PressAndHold(CAPTURE, 2_000, 1_000, token).ConfigureAwait(false);
                 }
 
-                if (Hub.Config.StopConditions.CatchEncounter)
+                if (Hub.Config.StopConditions.CatchEncounter && (Hub.Config.Encounter.EncounteringType == EncounterMode.VerticalLine || Hub.Config.Encounter.EncounteringType == EncounterMode.HorizontalLine))
                     await CatchWildPokemon(pk, token).ConfigureAwait(false);
 
                 return true;
@@ -303,7 +301,7 @@ namespace SysBot.Pokemon
 
         private async Task CheckPokeBallCount(CancellationToken token)
         {
-            if (Hub.Config.StopConditions.CatchEncounter && !Hub.Config.Encounter.StrongSpawn)
+            if (Hub.Config.StopConditions.CatchEncounter)
             {
                 Log("Checking Poké Ball count...");
                 pouchData = await Connection.ReadBytesAsync(PokeBallOffset, 116, Config.ConnectionType, token).ConfigureAwait(false);
@@ -318,35 +316,40 @@ namespace SysBot.Pokemon
             }
         }
 
-        private async Task StrongSpawn(CancellationToken token)
+        private async Task DoStrongSpawnEncounter(CancellationToken token)
         {
-            Log("Closing the game!");
-            await Click(HOME, 1_500, token).ConfigureAwait(false);
-            await Click(X, 1_000, token).ConfigureAwait(false);
-            await Click(A, 4_000, token).ConfigureAwait(false); // Closing software prompt
-            Log("Closed out of the game!");
+            while (!token.IsCancellationRequested && Config.NextRoutineType == PokeRoutineType.EncounterBot)
+            {
+                while (!await IsInBattle(token).ConfigureAwait(false))
+                    await Click(A, 2_000, token).ConfigureAwait(false);
 
-            // Open game and select profile.
-            await Click(A, 1_000, token).ConfigureAwait(false);
-            await Click(A, 1_000, token).ConfigureAwait(false);
-            // If they have DLC on the system and can't use it, requires an UP + A to start the game.
-            // Should be harmless otherwise since they'll be in loading screen.
-            await Click(DUP, 0_600, token).ConfigureAwait(false);
-            await Click(A, 0_600, token).ConfigureAwait(false);
+                var pk = await ReadUntilPresent(WildPokemonOffset, 2_000, 0_200, token).ConfigureAwait(false);
+                if (pk == null)
+                {
+                    Log("Invalid data detected. Restarting loop.");
+                    continue;
+                }
+                else
+                {
+                    if (await HandleEncounter(pk, true, token).ConfigureAwait(false))
+                        return;
+                }
 
-            // Switch Logo lag, skip cutscene, game load screen
-            await Task.Delay(11_000, token).ConfigureAwait(false);
+                Log($"Resetting {SpeciesName.GetSpeciesNameGeneration(pk.Species, 2, 8)} by restarting the game");
+                await CloseGame(Hub.Config, token).ConfigureAwait(false);
 
-            for (int i = 0; i < 5; i++)
-                await Click(A, 1_000, token).ConfigureAwait(false);
+                await Click(A, 1_000 + Hub.Config.Timings.ExtraTimeLoadProfile, token).ConfigureAwait(false);
+                await Click(A, 1_000 + Hub.Config.Timings.ExtraTimeCheckDLC, token).ConfigureAwait(false);
+                await Click(DUP, 0_600, token).ConfigureAwait(false);
+                await Click(A, 0_600, token).ConfigureAwait(false);
 
-            while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
-                await Click(A, 1_000, token).ConfigureAwait(false);
+                Log("Restarting the game and mashing A until in battle!");
 
-            Log("Restarted the game!");
+                await Task.Delay(11_000 + Hub.Config.Timings.ExtraTimeLoadGame, token).ConfigureAwait(false);
 
-            while (!await IsInBattle(token).ConfigureAwait(false))
-                await Task.Delay(2_000, token).ConfigureAwait(false);
+                for (int i = 0; i < 5; i++)
+                    await Click(A, 1_000, token).ConfigureAwait(false);
+            }
         }
     }
 }

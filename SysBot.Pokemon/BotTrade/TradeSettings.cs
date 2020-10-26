@@ -25,7 +25,7 @@ namespace SysBot.Pokemon
         [Category(Dumping), Description("Link Trade: Dumping routine will stop after spending x seconds in trade.")]
         public int MaxDumpTradeTime { get; set; } = 180;
 
-        [Category(TradeCode), Description("Spin while waiting for trade partner.")]
+        [Category(TradeCode), Description("Spin while waiting for trade partner. Currently needs USB-Botbase.")]
         public bool SpinTrade { get; set; } = false;
 
         [Category(TradeCode), Description("Link Trade: Will restrict trading to a single non-shiny species. Useful for item trades in servers (such as raid servers) that don't want full-on genning.")]

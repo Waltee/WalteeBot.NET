@@ -21,5 +21,10 @@
         /// Bot will soft reset the Legendary Dogs
         /// </summary>
         LegendaryDogs,
+
+        /// <summary>
+        /// Bot will soft reset Strong Spawns
+        /// </summary>
+        StrongSpawn,
     }
 }
