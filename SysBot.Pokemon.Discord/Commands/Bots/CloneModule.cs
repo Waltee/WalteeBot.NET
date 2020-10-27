@@ -48,8 +48,8 @@ namespace SysBot.Pokemon.Discord
         public async Task FixAdOT()
         {
             var code = Info.GetRandomTradeCode();
-            bool sudo = Context.User.GetIsSudo();
-            await Context.AddToQueueAsync(code, Context.User.Username, sudo, new PK8(), PokeRoutineType.FixOT, PokeTradeType.FixOT).ConfigureAwait(false);
+            var sig = Context.User.GetFavor();
+            await Context.AddToQueueAsync(code, Context.User.Username, sig, new PK8(), PokeRoutineType.FixOT, PokeTradeType.FixOT).ConfigureAwait(false);
         }
 
         [Command("cloneList")]
