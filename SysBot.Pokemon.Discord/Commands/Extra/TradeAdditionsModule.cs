@@ -323,6 +323,18 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
+            var content = File.ReadAllText($"TradeCord\\{user}.txt").Split(',').ToList();
+            if (content.Count > 7)
+            {
+                for (int i = 7; i < content.Count; i++)
+                {
+                    if (content[i].Replace("★", "").Trim() == id)
+                        content.RemoveAt(i);
+                }
+
+                File.WriteAllText($"TradeCord\\{Context.User.Id}.txt", string.Join(",", content));
+            }
+
             var pkm = PKMConverter.GetPKMfromBytes(File.ReadAllBytes(path[0]));
             if (pkm == null)
             {
@@ -360,6 +372,18 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
+            var content = File.ReadAllText($"TradeCord\\{user}.txt").Split(',').ToList();
+            if (content.Count > 7)
+            {
+                for (int i = 7; i < content.Count; i++)
+                {
+                    if (content[i].Replace("★", "").Trim() == id)
+                        content.RemoveAt(i);
+                }
+
+                File.WriteAllText($"TradeCord\\{Context.User.Id}.txt", string.Join(",", content));
+            }
+
             var pkm = PKMConverter.GetPKMfromBytes(File.ReadAllBytes(path[0]));
             if (pkm == null)
             {
@@ -393,7 +417,7 @@ namespace SysBot.Pokemon.Discord
             }
 
             var species = SpeciesName.GetSpeciesID(name.Split('-')[0].Trim());
-            if (species == -1 && !name.Contains("Nidoran") && !name.Contains("Egg") && !name.Contains("Shinies"))
+            if (species == -1 && !name.Contains("Nidoran") && !name.Contains("Egg") && !name.Contains("Shinies") && !name.Contains("All"))
             {
                 await Context.Message.Channel.SendMessageAsync("Not a valid Pokémon").ConfigureAwait(false);
                 return;
@@ -410,6 +434,7 @@ namespace SysBot.Pokemon.Discord
 
             var countTemp = list.FindAll(x => x.Contains(name));
             var count = new List<string>();
+            var countAll = new List<string>();
             var countSh = new List<string>();
             var countShAll = new List<string>();
             foreach (var line in countTemp)
@@ -425,19 +450,38 @@ namespace SysBot.Pokemon.Discord
             {
                 foreach (var line in list)
                 {
+                    var sanitize = line.Contains("(Egg)") ? line.Replace("(Egg)", "").Trim() : line;
+                    if (sanitize.Contains("★"))
+                        countShAll.Add(sanitize.Split('-').Length > 2 ? sanitize.Split('-')[1].Trim() + "-" + sanitize.Split('-')[2].Trim() : sanitize.Split('-')[1].Trim());
+                }
+            }
+
+            if (name == "All")
+            {
+                foreach (var line in list)
+                {
+                    var sort = line.Split('-').Length > 2 ? line.Split('-')[1].Trim() + "-" + line.Split('-')[2].Trim() : line.Split('-')[1].Trim();
+                    if (!countAll.Contains(sort) && !countAll.Contains("★" + sort))
+                    {
+                        sort = sort.Contains("(Egg)") ? sort.Replace("(Egg)", "").Trim() : sort;
+                        countAll.Add(line.Contains("★") ? "★" + sort : sort);
+                    }
+
                     if (line.Contains("★"))
                         countShAll.Add(line.Split('-').Length > 2 ? line.Split('-')[1].Trim() + "-" + line.Split('-')[2].Trim() : line.Split('-')[1].Trim());
                 }
             }
 
-            var entry = string.Join(", ", name == "Shinies" ? countShAll.OrderBy(x => x.Substring(0, 1)) : count.OrderBy(x => x.Contains('★') ? int.Parse(x.Split('★')[1]) : int.Parse(x)));
+            var entry = string.Join(", ", name == "Shinies" ? countShAll.OrderBy(x => x.Substring(0, 1)) : name == "All" ? countAll.OrderBy(x => x.Substring(0, 1)) : count.OrderBy(x => x.Contains('★') ? int.Parse(x.Split('★')[1]) : int.Parse(x)));
             if (entry == "")
             {
                 await Context.Message.Channel.SendMessageAsync("No results found.").ConfigureAwait(false);
                 return;
             }
 
-            var msg = $"{Context.User.Username}'s {(name != "Shinies" ? "List" : "Shiny Pokémon")} [Total: {(name == "Shinies" ? $"★{list.Count(x => x.Contains("★"))}" : $"{count.Count}, ★{countSh.Count}")}]";
+            var listName = name == "Shinies" ? "Shiny Pokémon" : name == "All" ? "Pokémon" : name == "Egg" ? "Eggs" : name;
+            var listCount = name == "Shinies" ? $"★{list.Count(x => x.Contains("★"))}" : name == "All" ? $"{list.Count}, ★{countShAll.Count}" : $"{count.Count}, ★{countSh.Count}";
+            var msg = $"{Context.User.Username}'s {listName} [Total: {listCount}]";
             if (entry.Length > 1024)
                 entry = entry.AsSpan().Slice(0, 1021).ToString() + "...";
 
@@ -838,6 +882,18 @@ namespace SysBot.Pokemon.Discord
             else if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
+            var content = File.ReadAllText($"TradeCord\\{user}.txt").Split(',').ToList();
+            if (content.Count > 7)
+            {
+                for (int i = 7; i < content.Count; i++)
+                {
+                    if (content[i].Replace("★", "").Trim() == id)
+                        content.RemoveAt(i);
+                }
+
+                File.WriteAllText($"TradeCord\\{Context.User.Id}.txt", string.Join(",", content));
+            }
+
             var split = path[0].Split('\\')[2].Split('-');
             var oldname = split[0].Replace("★", "").Trim().Substring(0, id.Length);
             var newIDparse = Directory.GetFiles(dir).Where(x => x.Contains(".pk8")).Select(x => x.Split('\\')[2].Split('-')[0].Replace("★", "").Trim()).ToArray();
@@ -994,19 +1050,24 @@ namespace SysBot.Pokemon.Discord
             string? fav = favorites.Count > 0 ? favorites.Find(x => x.Replace("★", "").Trim().Equals(id)) : "";
             fav = fav != null ? fav.Replace("★", "").Trim() : fav;
             var split = path[0].Split('\\')[2];
-            var name = split.Split('-')[1].Replace(".pk8", "").Trim();
+            var name = split.Split('-').Length > 2 ? split.Split('-')[1].Trim() + "-" + split.Split('-')[2].Replace(".pk8", "").Trim() : split.Split('-')[1].Replace(".pk8", "").Trim();
             if (fav != id)
             {
                 content.Add(split.Split('.')[0].Split('-')[0].Trim());
                 File.WriteAllText($"TradeCord\\{Context.User.Id}.txt", string.Join(",", content));
-                await Context.Message.Channel.SendMessageAsync($"{Context.User.Username}, added your {(split.Contains("★") ? "★" + name : name)} to favorites!").ConfigureAwait(false);
+                await Context.Message.Channel.SendMessageAsync($"{Context.User.Username}, added your {(split.Contains("★") ? "★**" + name + "**" : name)} to favorites!").ConfigureAwait(false);
                 return;
             }
             else if (fav == id)
             {
-                content.Remove(split.Split('.')[0].Split('-')[0].Trim());
+                for (int i = 7; i < content.Count; i++)
+                {
+                    if (content[i].Replace("★", "").Trim() == id)
+                        content.RemoveAt(i);
+                }
+
                 File.WriteAllText($"TradeCord\\{Context.User.Id}.txt", string.Join(",", content));
-                await Context.Message.Channel.SendMessageAsync($"{Context.User.Username}, removed your {(split.Contains("★") ? "★" + name : name)} from favorites!").ConfigureAwait(false);
+                await Context.Message.Channel.SendMessageAsync($"{Context.User.Username}, removed your {(split.Contains("★") ? "★**" + name + "**" : name)} from favorites!").ConfigureAwait(false);
                 return;
             }
         }
