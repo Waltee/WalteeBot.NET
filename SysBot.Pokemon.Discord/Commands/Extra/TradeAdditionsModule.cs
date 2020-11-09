@@ -630,8 +630,9 @@ namespace SysBot.Pokemon.Discord
         [RequireQueueRole(nameof(DiscordManager.RolesTradeCord))]
         public async Task DaycareInfo()
         {
+            TradeCordParanoiaChecks(Context);
             var content = File.ReadAllText($"TradeCord\\{Context.User.Id}.txt").Split(',').ToList();
-            if (content[1] == "0" || content[2] == "0")
+            if (content[1] == "0" && content[2] == "0")
             {
                 await Context.Message.Channel.SendMessageAsync("You do not have anything in daycare.").ConfigureAwait(false);
                 return;
@@ -641,16 +642,36 @@ namespace SysBot.Pokemon.Discord
             var split2 = content[2].Split('_');
             var shiny1 = split1.Contains("★");
             var shiny2 = split2.Contains("★");
-            var speciesID1 = int.Parse(split1[shiny1 ? 2 : 1]);
-            var speciesID2 = int.Parse(split2[shiny2 ? 2 : 1]);
-            var dcSpecies1 = $"[ID: {split1[shiny1 ? 1 : 0]}] {(shiny1 ? "★" : "")}{SpeciesName.GetSpeciesNameGeneration(speciesID1, 2, 8)} ({(Ball)int.Parse(split1[shiny1 ? 3 : 2])})";
-            var dcSpecies2 = $"[ID: {split2[shiny2 ? 1 : 0]}] {(shiny2 ? "★" : "")}{SpeciesName.GetSpeciesNameGeneration(speciesID2, 2, 8)} ({(Ball)int.Parse(split2[shiny2 ? 3 : 2])})";
+            int speciesID1 = 0;
+            int speciesID2 = 0;
+            string dcSpecies1 = "";
+            string dcSpecies2 = "";
+            string msg = "";
+
+            if (content[1] != "0")
+            {
+                speciesID1 = int.Parse(split1[shiny1 ? 2 : 1]);
+                dcSpecies1 = $"[ID: {split1[shiny1 ? 1 : 0]}] {(shiny1 ? "★" : "")}{SpeciesName.GetSpeciesNameGeneration(speciesID1, 2, 8)} ({(Ball)int.Parse(split1[shiny1 ? 3 : 2])})";
+            }
+
+            if (content[2] != "0")
+            {
+                speciesID2 = int.Parse(split2[shiny2 ? 2 : 1]);
+                dcSpecies2 = $"[ID: {split2[shiny2 ? 1 : 0]}] {(shiny2 ? "★" : "")}{SpeciesName.GetSpeciesNameGeneration(speciesID2, 2, 8)} ({(Ball)int.Parse(split2[shiny2 ? 3 : 2])})";
+            }
+
+            if (content[1] != "0" && content[2] != "0")
+                msg = $"{dcSpecies1}\n{dcSpecies2}{(CanGenerateEgg(content) ? "\n\nThey seem to really like each other." : "\n\nThey don't really seem to be fond of each other. Make sure they're base evolution and can be eggs!")}";
+            else if (content[1] == "0" && content[2] != "0")
+                msg = $"{dcSpecies2}\n\nIt seems lonely.";
+            else if (content[2] == "0" && content[1] != "0")
+                msg = $"{dcSpecies1}\n\nIt seems lonely.";
 
             var embedInfo = new EmbedBuilder { Color = Color.DarkBlue };
             embedInfo.AddField(x =>
             {
                 x.Name = $"{Context.User.Username}'s Daycare Info";
-                x.Value = $"{dcSpecies1}\n{dcSpecies2}{(CanGenerateEgg(content) ? "\n\nThey seem to really like each other." : "\n\nThey don't really seem to be fond of each other. Make sure they're base evolution and can be eggs!")}";
+                x.Value = msg;
                 x.IsInline = false;
             });
 
@@ -678,7 +699,7 @@ namespace SysBot.Pokemon.Discord
 
             var user = Context.User.Id.ToString();
             var content = File.ReadAllText($"TradeCord\\{user}.txt").Split(',').ToList();
-            if (action.ToLower() == "w")
+            if (action.ToLower() == "w" || action.ToLower() == "withdraw")
             {
                 if (content[1] == "0" && content[2] == "0")
                 {
@@ -691,7 +712,7 @@ namespace SysBot.Pokemon.Discord
                 var id1 = content[1] != "0" ? content[1].Split('_')[shiny1 ? 1 : 0].Trim() : "";
                 var id2 = content[2] != "0" ? content[2].Split('_')[shiny2 ? 1 : 0].Trim() : "";
                 List<string> species = new List<string>();
-                if (action.ToLower() == "w" && id != "All")
+                if ((action.ToLower() == "w" || action.ToLower() == "withdraw") && id != "All")
                 {
                     if (id1.Equals(id))
                         species.Add(content[1].Split('_')[shiny1 ? 2 : 1].Trim());
@@ -755,9 +776,9 @@ namespace SysBot.Pokemon.Discord
                     return;
                 }
 
-                if (content[1] == "0" && content[2] != "0" && !content[2].Split('_')[1].Equals(id))
+                if (content[1] == "0" && content[2] != "0" && !content[2].Split('_')[content[2].Contains("★") ? 1 : 0].Equals(id))
                     content[1] = (pkm.IsShiny ? "★_" : "") + id + "_" + pkm.Species + "_" + pkm.Ball;
-                else if (content[2] == "0" && content[1] != "0" && !content[1].Split('_')[1].Equals(id))
+                else if (content[2] == "0" && content[1] != "0" && !content[1].Split('_')[content[1].Contains("★") ? 1 : 0].Equals(id))
                     content[2] = (pkm.IsShiny ? "★_" : "") + id + "_" + pkm.Species + "_" + pkm.Ball;
                 else if (content[1] == "0" && content[2] == "0")
                     content[1] = (pkm.IsShiny ? "★_" : "") + id + "_" + pkm.Species + "_" + pkm.Ball;
