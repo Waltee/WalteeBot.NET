@@ -404,23 +404,21 @@ namespace SysBot.Pokemon.Discord
         {
             TradeCordParanoiaChecks(Context);
             name = name.Substring(0, 1).ToUpper() + name.Substring(1, name.Length - 1).ToLower();
+
+            if (name.Contains("'"))
+                name = name.Replace("'", "’");
+
             if (name.Contains('-'))
             {
                 var split = name.Split('-');
-                name = split[0] + "-" + split[1].Substring(0, 1).ToUpper() + split[1].Substring(1, split[1].Length - 1).ToLower();
+                bool exceptions = split[1] == "z" || split[1] == "m" || split[1] == "f";
+                name = split[0] + "-" + (split[1].Length < 2 && !exceptions ? split[1] : split[1].Substring(0, 1).ToUpper() + split[1].Substring(1, split[1].Length - 1).ToLower());
             }
 
             if (name.Contains(' '))
             {
                 var split = name.Split(' ');
                 name = split[0] + " " + split[1].Substring(0, 1).ToUpper() + split[1].Substring(1, split[1].Length - 1).ToLower();
-            }
-
-            var species = SpeciesName.GetSpeciesID(name.Split('-')[0].Trim());
-            if (species == -1 && !name.Contains("Nidoran") && !name.Contains("Egg") && !name.Contains("Shinies") && !name.Contains("All"))
-            {
-                await Context.Message.Channel.SendMessageAsync("Not a valid Pokémon").ConfigureAwait(false);
-                return;
             }
 
             var user = Context.User.Id.ToString();
@@ -479,7 +477,7 @@ namespace SysBot.Pokemon.Discord
                 return;
             }
 
-            var listName = name == "Shinies" ? "Shiny Pokémon" : name == "All" ? "Pokémon" : name == "Egg" ? "Eggs" : name;
+            var listName = name == "Shinies" ? "Shiny Pokémon" : name == "All" ? "Pokémon" : name == "Egg" ? "Eggs" : "List For " + name;
             var listCount = name == "Shinies" ? $"★{list.Count(x => x.Contains("★"))}" : name == "All" ? $"{list.Count}, ★{countShAll.Count}" : $"{count.Count}, ★{countSh.Count}";
             var msg = $"{Context.User.Username}'s {listName} [Total: {listCount}]";
             if (entry.Length > 1024)
@@ -601,7 +599,7 @@ namespace SysBot.Pokemon.Discord
             embed.AddField(x =>
             {
                 x.Name = $"{Context.User.Username}'s Mass Release";
-                x.Value = $"Every non-shiny Pokémon was released, excluding Ditto and those in daycare.";
+                x.Value = $"Every non-shiny Pokémon was released, excluding Ditto, favorites, and those in daycare.";
                 x.IsInline = false;
             });
 
