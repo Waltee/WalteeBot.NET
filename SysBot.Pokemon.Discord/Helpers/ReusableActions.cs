@@ -78,7 +78,7 @@ namespace SysBot.Pokemon.Discord
             if (pkm.IsShiny)
             {
                 var index = newShowdown.FindIndex(x => x.Contains("Shiny: Yes"));
-                if (pkm.ShinyXor == 0)
+                if (pkm.ShinyXor == 0 || pkm.FatefulEncounter)
                     newShowdown[index] = "Shiny: Square\r";
                 else newShowdown[index] = "Shiny: Star\r";
             }

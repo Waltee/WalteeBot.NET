@@ -73,6 +73,12 @@ namespace SysBot.Pokemon.Discord
             var sav = AutoLegalityWrapper.GetTrainerInfo(gen);
             var pkm = sav.GetLegal(template, out _);
 
+            if (Info.Hub.Config.Trade.DittoTrade && pkm.Species == 132)
+                TradeExtensions.DittoTrade(pkm);
+
+            if (Info.Hub.Config.Trade.EggTrade && pkm.Nickname == "Egg")
+                TradeExtensions.EggTrade((PK8)pkm);
+
             var la = new LegalityAnalysis(pkm);
             var spec = GameInfo.Strings.Species[template.Species];
             var invalid = !(pkm is PK8) || (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality);
@@ -121,12 +127,6 @@ namespace SysBot.Pokemon.Discord
                 await ReplyAsync($"{(!Info.Hub.Config.Trade.ItemMuleCustomMessage.Equals(string.Empty) && !Info.Hub.Config.Trade.ItemMuleSpecies.Equals(Species.None) ? Info.Hub.Config.Trade.ItemMuleCustomMessage : msg)}").ConfigureAwait(false);
                 return;
             }
-
-            if (Info.Hub.Config.Trade.DittoTrade && pk8.Species == 132)
-                TradeExtensions.DittoTrade(pk8);
-
-            if (Info.Hub.Config.Trade.EggTrade && pk8.Nickname == "Egg")
-                TradeExtensions.EggTrade(pk8);
 
             var la = new LegalityAnalysis(pk8);
             if (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality)

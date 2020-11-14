@@ -39,6 +39,13 @@ namespace SysBot.Pokemon.Discord
         public void TradeCanceled(PokeRoutineExecutor routine, PokeTradeDetail<T> info, PokeTradeResult msg)
         {
             OnFinish?.Invoke(routine);
+            if (info.Type == PokeTradeType.TradeCord)
+            {
+                var user = Context.User.Id.ToString();
+                var path = TradeExtensions.TradeCordPath.FirstOrDefault(x => x.Contains(user));
+                TradeExtensions.TradeCordPath.Remove(path);
+            }
+
             Context.User.SendMessageAsync($"Trade canceled: {msg}").ConfigureAwait(false);
         }
 
