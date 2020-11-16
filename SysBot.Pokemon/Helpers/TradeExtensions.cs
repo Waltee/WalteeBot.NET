@@ -86,9 +86,9 @@ namespace SysBot.Pokemon
                                         890, 891, 892, 893, 894, 895, 896, 897, 898 };
 
         public static int[] Cherish = { (int)Species.Bulbasaur, (int)Species.Venusaur, (int)Species.Charmander, (int)Species.Charizard, (int)Species.Squirtle, (int)Species.Blastoise,
-                                        (int)Species.Pichu, (int)Species.Pikachu, (int)Species.Sandshrew, (int)Species.Vulpix, (int)Species.Ninetales, (int)Species.Diglett, 
+                                        (int)Species.Pikachu, (int)Species.Sandshrew, (int)Species.Vulpix, (int)Species.Ninetales, (int)Species.Diglett, 
                                         (int)Species.Meowth, (int)Species.Psyduck, (int)Species.Golduck, (int)Species.Arcanine, (int)Species.Machoke, (int)Species.Machamp,
-                                        (int)Species.Krabby, (int)Species.Ponyta, (int)Species.Slowpoke, (int)Species.Slowbro, (int)Species.Haunter, (int)Species.Gengar, (int)Species.Exeggutor,
+                                        (int)Species.Ponyta, (int)Species.Slowpoke, (int)Species.Slowbro, (int)Species.Haunter, (int)Species.Gengar, (int)Species.Exeggutor,
                                         (int)Species.Chansey, (int)Species.Kangaskhan, (int)Species.MrMime, (int)Species.Scyther, (int)Species.Electabuzz, (int)Species.Magmar, (int)Species.Beldum, 
                                         (int)Species.Pinsir, (int)Species.Magikarp, (int)Species.Gyarados, (int)Species.Ditto, (int)Species.Eevee, (int)Species.Vaporeon, (int)Species.Jolteon,
                                         (int)Species.Flareon, (int)Species.Omanyte, (int)Species.Kabuto, (int)Species.Aerodactyl, (int)Species.Snorlax, (int)Species.Articuno, (int)Species.Zapdos,
@@ -99,8 +99,8 @@ namespace SysBot.Pokemon
                                         (int)Species.Delibird, (int)Species.Kingdra, (int)Species.Porygon2, (int)Species.Miltank, (int)Species.Raikou, (int)Species.Entei, (int)Species.Suicune,
                                         (int)Species.Lugia, (int)Species.HoOh, (int)Species.Celebi, (int)Species.Sceptile, (int)Species.Torchic, (int)Species.Blaziken, (int)Species.Swampert,
                                         (int)Species.Linoone, (int)Species.Ludicolo, (int)Species.Gardevoir, (int)Species.Sableye, (int)Species.Mawile, (int)Species.Aggron, (int)Species.Manectric,
-                                        (int)Species.Sharpedo, (int)Species.Altaria, (int)Species.Lunatone, (int)Species.Solrock, (int)Species.Whiscash, (int)Species.Lileep, (int)Species.Anorith,
-                                        (int)Species.Feebas, (int)Species.Milotic, (int)Species.Walrein, (int)Species.Salamence, (int)Species.Metagross, (int)Species.Latios, (int)Species.Latias,
+                                        (int)Species.Sharpedo, (int)Species.Altaria, (int)Species.Lunatone, (int)Species.Solrock, (int)Species.Lileep, (int)Species.Anorith, 
+                                        (int)Species.Milotic, (int)Species.Walrein, (int)Species.Salamence, (int)Species.Metagross, (int)Species.Latios, (int)Species.Latias,
                                         (int)Species.Kyogre, (int)Species.Groudon, (int)Species.Rayquaza, (int)Species.Jirachi, (int)Species.Gastrodon, (int)Species.Spiritomb, (int)Species.Garchomp,
                                         (int)Species.Munchlax, (int)Species.Lucario, (int)Species.Weavile, (int)Species.Tangrowth, (int)Species.Electivire, (int)Species.Magmortar, (int)Species.Leafeon,
                                         (int)Species.Glaceon, (int)Species.Rotom, (int)Species.Dialga, (int)Species.Palkia, (int)Species.Heatran, (int)Species.Regigigas, (int)Species.Giratina,
@@ -155,6 +155,7 @@ namespace SysBot.Pokemon
             var troublesomeAltForms = pkm.Species == (int)Species.Marowak || pkm.Species == (int)Species.Raichu || pkm.Species == (int)Species.Giratina || pkm.Species == (int)Species.Silvally ||
                                       pkm.Species == (int)Species.Genesect || pkm.Species == (int)Species.Articuno || pkm.Species == (int)Species.Zapdos || pkm.Species == (int)Species.Moltres;
 
+            pkm.AltForm = pkm.Species == (int)Species.Silvally || pkm.Species == (int)Species.Genesect || pkm.Species == (int)Species.Giratina ? rng.Next(0, pkm.PersonalInfo.FormeCount) : pkm.AltForm;
             if (AltFormInfo.IsBattleOnlyForm(pkm.Species, pkm.AltForm, pkm.Format))
                 pkm.AltForm = AltFormInfo.GetOutOfBattleForm(pkm.Species, pkm.AltForm, pkm.Format);
             else if (AltFormInfo.IsFusedForm(pkm.Species, pkm.AltForm, pkm.Format))
@@ -249,7 +250,7 @@ namespace SysBot.Pokemon
             var species2 = form2 != "" ? int.Parse(content[2].Split('_')[content[2].Contains("★") ? 2 : 1].Replace(form2, "").Trim()) : int.Parse(content[2].Split('_')[content[2].Contains("★") ? 2 : 1].Trim());
             bool specificEgg = (species1 == species2 && ValidEgg.Contains(species1)) || ((species1 == 132 || species2 == 132) && (ValidEgg.Contains(species1) || ValidEgg.Contains(species2)));
             var shinyRng = rng.Next(content[1].Contains("★") && content[2].Contains("★") ? 15 : 0, 100);
-            var ballRngDC = rng.Next(1, 2);
+            var ballRngDC = rng.Next(1, 3);
             var speciesRng = specificEgg ? SpeciesName.GetSpeciesNameGeneration(species1 == 132 && species2 != 132 ? species2 : species1, 2, 8) : SpeciesName.GetSpeciesNameGeneration((int)ValidEgg.GetValue(rng.Next(0, ValidEgg.Length)), 2, 8);
 
             if (speciesRng.Contains("Nidoran"))
@@ -271,10 +272,9 @@ namespace SysBot.Pokemon
             if (AltFormInfo.IsBattleOnlyForm(pkm.Species, pkm.AltForm, pkm.Format))
                 pkm.AltForm = AltFormInfo.GetOutOfBattleForm(pkm.Species, pkm.AltForm, pkm.Format);
 
-            var legalBalls = BallApplicator.GetLegalBalls(pkm);
-            if (ballRngDC == 1 && legalBalls.Contains((Ball)ball1))
+            if (ballRngDC == 1)
                 pkm.Ball = ball1;
-            else if (ballRngDC == 2 && legalBalls.Contains((Ball)ball2))
+            else if (ballRngDC == 2)
                 pkm.Ball = ball2;
 
             EggTrade((PK8)pkm);

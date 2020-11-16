@@ -155,12 +155,15 @@ namespace SysBot.Pokemon.Discord
                 if (((speciesRng == (int)Species.Mew && shinyRng > 95) || ballRng.Contains("Cherish")) && trainerInfo.Count == 5)
                     trainerInfo.RemoveAt(4);
 
-                if (speciesRng == (int)Species.Silvally && shinyRng > 95)
+                if ((speciesRng == (int)Species.Silvally || speciesRng == (int)Species.Necrozma) && shinyRng > 95)
                     ballRng = "\nBall: Cherish";
+                else if (speciesRng == (int)Species.Silvally && shinyRng < 96)
+                    ballRng = "\nBall: Poke";
 
                 if ((speciesRng == (int)Species.Poipole || speciesRng == (int)Species.Naganadel || speciesRng == (int)Species.TapuKoko || speciesRng == (int)Species.TapuLele ||
-                    speciesRng == (int)Species.TapuBulu || speciesRng == (int)Species.TapuFini || speciesRng == (int)Species.Larvitar) && ballRng.Contains("Cherish") && shinyRng < 96)
-                    shinyRng = 96;
+                    speciesRng == (int)Species.TapuBulu || speciesRng == (int)Species.TapuFini || speciesRng == (int)Species.Larvitar || speciesRng == (int)Species.Solgaleo ||
+                    speciesRng == (int)Species.Lunala || speciesRng == (int)Species.Necrozma) && ballRng.Contains("Cherish") && shinyRng < 96)
+                    ballRng = "\nBall: Poke";
 
                 if ((speciesRng == (int)Species.Meltan || speciesRng == (int)Species.Melmetal) && !TradeExtensions.LGPEBalls.Contains(ballRng.Split(' ')[1].Trim()))
                     ballRng = "\nBall: " + TradeExtensions.LGPEBalls[rng.Next(0, TradeExtensions.LGPEBalls.Length)];
@@ -176,7 +179,7 @@ namespace SysBot.Pokemon.Discord
                     shinyType = "\nShiny: Star";
 
                 var set = new ShowdownSet($"{speciesName}{formHack.Item1}{ballRng}{shinyType}\n{string.Join("\n", trainerInfo)}");
-                canGmax = set.CanToggleGigantamax(set.Species, set.FormIndex) && gmaxRng > 70 && set.Species != (int)Species.Melmetal;
+                canGmax = set.CanToggleGigantamax(set.Species, set.FormIndex) && gmaxRng > 70 && !ballRng.Contains("Cherish") && set.Species != (int)Species.Melmetal;
                 if (canGmax)
                     set.CanGigantamax = true;
 
@@ -228,7 +231,7 @@ namespace SysBot.Pokemon.Discord
                     (canGmax ? "g" : "n") + "_0000000" + (pkm.Species == (int)Species.Alcremie ? alcremieDeco : 0) + "_f_" + (pkm.IsShiny ? "r" : "n") + ".png";
 
                 var ballImg = $"https://serebii.net/itemdex/sprites/pgl/" + $"{(Ball)pkm.Ball}ball".ToLower() + ".png";
-                var embed = new EmbedBuilder { Color = pkm.IsShiny && (shinyType.Contains("Square") || pkm.FatefulEncounter) ? Color.Gold : pkm.IsShiny && shinyType.Contains("Star") ? Color.LightOrange : Color.Teal, ImageUrl = pokeImg, ThumbnailUrl = ballImg };
+                var embed = new EmbedBuilder { Color = pkm.IsShiny && pkm.ShinyXor == 0 ? Color.Gold : pkm.IsShiny ? Color.LightOrange : Color.Teal, ImageUrl = pokeImg, ThumbnailUrl = ballImg };
                 embed.AddField(x =>
                 {
                     x.Name = $"{Context.User.Username}'s Catch [#{catchID}]";
@@ -989,13 +992,27 @@ namespace SysBot.Pokemon.Discord
                     $"[ID: {entry}] " + split.Split('-')[1].Replace(".pk8", "").Replace("(Egg)", "").Trim());
             }
 
+            var msg = string.Join(", ", names);
+            if (msg.Length > 1024)
+                msg = msg.AsSpan().Slice(0, 1021).ToString() + "...";
+
             var embed = new EmbedBuilder { Color = Color.DarkBlue };
             embed.AddField(x =>
             {
                 x.Name = $"{Context.User.Username}'s Favorites";
-                x.Value = $"{string.Join(", ", names)}";
+                x.Value = msg;
                 x.IsInline = false;
             });
+
+            if (msg.Length == 1024)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Too many results to display!";
+                    x.Value = "Please consider trading or releasing some Pokémon.";
+                    x.IsInline = false;
+                });
+            }
 
             await Context.Message.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
         }
@@ -1231,6 +1248,7 @@ namespace SysBot.Pokemon.Discord
                     case (int)Species.Rockruff: formHack = "-Dusk"; break;
                     case (int)Species.Lycanroc: formHack = "-Midnight"; break;
                     case (int)Species.Gastrodon: formHack = "-East"; break;
+                    case (int)Species.Pumpkaboo: formHack = "-Super"; break;
                     case (int)Species.Meowth: _ = formEdgeCaseRng == 1 ? formHack = "" : formHack = "-Galar"; break;
                     case (int)Species.Magearna: _ = formEdgeCaseRng == 1 ? formHack = "" : formHack = "-Original"; break;
                     default: formHack = ""; break;
