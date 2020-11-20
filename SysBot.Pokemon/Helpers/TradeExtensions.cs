@@ -102,7 +102,7 @@ namespace SysBot.Pokemon
                                         (int)Species.Sharpedo, (int)Species.Altaria, (int)Species.Lunatone, (int)Species.Solrock, (int)Species.Lileep, (int)Species.Anorith, 
                                         (int)Species.Milotic, (int)Species.Walrein, (int)Species.Salamence, (int)Species.Metagross, (int)Species.Latios, (int)Species.Latias,
                                         (int)Species.Kyogre, (int)Species.Groudon, (int)Species.Rayquaza, (int)Species.Jirachi, (int)Species.Gastrodon, (int)Species.Spiritomb, (int)Species.Garchomp,
-                                        (int)Species.Munchlax, (int)Species.Lucario, (int)Species.Weavile, (int)Species.Tangrowth, (int)Species.Electivire, (int)Species.Magmortar, (int)Species.Leafeon,
+                                        (int)Species.Munchlax, (int)Species.Lucario, (int)Species.Weavile, (int)Species.Electivire, (int)Species.Magmortar, (int)Species.Leafeon,
                                         (int)Species.Glaceon, (int)Species.Rotom, (int)Species.Dialga, (int)Species.Palkia, (int)Species.Heatran, (int)Species.Regigigas, (int)Species.Giratina,
                                         (int)Species.Victini, (int)Species.Audino, (int)Species.Whimsicott, (int)Species.Krookodile, (int)Species.Darmanitan, (int)Species.Scraggy, (int)Species.Scrafty,
                                         (int)Species.Cofagrigus, (int)Species.Tirtouga, (int)Species.Archen, (int)Species.Zoroark, (int)Species.Karrablast, (int)Species.Shelmet, (int)Species.Chandelure,
@@ -183,7 +183,7 @@ namespace SysBot.Pokemon
                     case 773: pkm.HeldItem = SilvallyMemory[pkm.AltForm]; break;
                 };
             }
-            else if (pkm.AltForm == 0 && troublesomeAltForms)
+            else if (pkm.AltForm == 0 && !pkm.FatefulEncounter && troublesomeAltForms)
             {
                 switch (pkm.Species)
                 {
@@ -203,12 +203,14 @@ namespace SysBot.Pokemon
             pkm.MetDate = DateTime.Parse("2020/10/20");
             pkm.IVs = pkm.FatefulEncounter ? pkm.IVs : pkm.SetRandomIVs(5);
             pkm.ClearHyperTraining();
-            pkm.SetAbilityIndex(Legends.Contains(pkm.Species) || UBs.Contains(pkm.Species) ? 0 : pkm.Met_Location == 244 || pkm.Met_Location == 30001 || GalarFossils.Contains(pkm.Species) ? 2 : rng.Next(0, 3));
             pkm.SetSuggestedMoves(false);
             pkm.RelearnMoves = (int[])pkm.GetSuggestedRelearnMoves();
             pkm.Move1_PPUps = pkm.Move2_PPUps = pkm.Move3_PPUps = pkm.Move4_PPUps = 0;
             pkm.SetMaximumPPCurrent(pkm.Moves);
             pkm.FixMoves();
+
+            if (!pkm.FatefulEncounter)
+                pkm.SetAbilityIndex(Legends.Contains(pkm.Species) || UBs.Contains(pkm.Species) ? 0 : pkm.Met_Location == 244 || pkm.Met_Location == 30001 || GalarFossils.Contains(pkm.Species) ? 2 : rng.Next(0, 3));
 
             if (pkm.Species == (int)Species.Exeggutor && pkm.AltForm > 0 && pkm.Met_Location == 164)
             {
@@ -250,7 +252,7 @@ namespace SysBot.Pokemon
             var species2 = form2 != "" ? int.Parse(content[2].Split('_')[content[2].Contains("★") ? 2 : 1].Replace(form2, "").Trim()) : int.Parse(content[2].Split('_')[content[2].Contains("★") ? 2 : 1].Trim());
             bool specificEgg = (species1 == species2 && ValidEgg.Contains(species1)) || ((species1 == 132 || species2 == 132) && (ValidEgg.Contains(species1) || ValidEgg.Contains(species2)));
             var shinyRng = rng.Next(content[1].Contains("★") && content[2].Contains("★") ? 15 : 0, 100);
-            var ballRngDC = rng.Next(1, 3);
+            var ballRngDC = rng.Next(0, 3);
             var speciesRng = specificEgg ? SpeciesName.GetSpeciesNameGeneration(species1 == 132 && species2 != 132 ? species2 : species1, 2, 8) : SpeciesName.GetSpeciesNameGeneration((int)ValidEgg.GetValue(rng.Next(0, ValidEgg.Length)), 2, 8);
 
             if (speciesRng.Contains("Nidoran"))
@@ -367,6 +369,28 @@ namespace SysBot.Pokemon
             pkm.SetMaximumPPCurrent(pkm.Moves);
             pkm.SetSuggestedHyperTrainingData();
             pkm.SetSuggestedRibbons();
+        }
+
+        public static List<string> SpliceAtWord(string entry, int start, int length)
+        {
+            int counter = 0;
+            var temp = entry.Split(',').Skip(start);
+            List<string> list = new List<string>();
+
+            if (entry.Length < length)
+            {
+                list.Add(entry ?? "");
+                return list;
+            }
+
+            foreach (var line in temp)
+            {
+                counter += line.Length + 2;
+                if (counter < length)
+                    list.Add(line.Trim());
+                else break;
+            }
+            return list;
         }
     }
 }

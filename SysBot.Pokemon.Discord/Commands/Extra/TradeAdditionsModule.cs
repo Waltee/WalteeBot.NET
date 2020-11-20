@@ -1,8 +1,10 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.Rest;
 using PKHeX.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -143,11 +145,18 @@ namespace SysBot.Pokemon.Discord
                 string shinyType = string.Empty;
                 var ballRng = $"\nBall: {(Ball)rng.Next(1, 26)}";
                 var speciesName = SpeciesName.GetSpeciesNameGeneration(speciesRng, 2, 8);
+                var nidoranGender = string.Empty;
                 var alcremieDeco = (uint)rng.Next(0, 6);
                 var shinyRng = rng.Next(0, 101);
                 var gmaxRng = rng.Next(0, 101);
                 bool canGmax = false;
                 var formHack = FormHack(speciesRng, ballRng);
+
+                if (speciesRng == 32 || speciesRng == 29)
+                {
+                    nidoranGender = speciesName.Last().ToString();
+                    speciesName = speciesName.Remove(speciesName.Length - 1);
+                }
 
                 if (ballRng != formHack.Item2)
                     ballRng = formHack.Item2;
@@ -157,7 +166,7 @@ namespace SysBot.Pokemon.Discord
 
                 if ((speciesRng == (int)Species.Silvally || speciesRng == (int)Species.Necrozma) && shinyRng > 95)
                     ballRng = "\nBall: Cherish";
-                else if (speciesRng == (int)Species.Silvally && shinyRng < 96)
+                else if ((speciesRng == (int)Species.Silvally || (speciesRng == (int)Species.Golurk && ballRng.Contains("Cherish")) || (speciesRng == (int)Species.Beldum && ballRng.Contains("Cherish"))) && shinyRng < 96)
                     ballRng = "\nBall: Poke";
 
                 if ((speciesRng == (int)Species.Poipole || speciesRng == (int)Species.Naganadel || speciesRng == (int)Species.TapuKoko || speciesRng == (int)Species.TapuLele ||
@@ -191,7 +200,7 @@ namespace SysBot.Pokemon.Discord
                 var pkm = sav.GetLegal(template, out _);
 
                 TradeExtensions.RngRoutine(pkm, alcremieDeco);
-                var form = FormOutput(pkm);
+                var form = nidoranGender != string.Empty ? nidoranGender : FormOutput(pkm);
 
                 if (pkm.Species == (int)Species.Pikachu && pkm.AltForm == 0 && shinyRng > 95)
                     CommonEdits.SetShiny(pkm, Shiny.Random);
@@ -414,15 +423,16 @@ namespace SysBot.Pokemon.Discord
             var count = new List<string>();
             var countAll = new List<string>();
             var countSh = new List<string>();
-            var countShAll = new List<string>();
+            var countShNonDupe = new List<string>();
 
             if (name == "Shinies")
             {
                 foreach (var line in list)
                 {
-                    var sanitize = line.Contains("(Egg)") ? line.Replace("(Egg)", "").Trim() : line;
-                    if (sanitize.Contains("★"))
-                        countShAll.Add(sanitize.Split('-').Length > 2 ? sanitize.Split('-')[1].Trim() + "-" + sanitize.Split('-')[2].Trim() : sanitize.Split('-')[1].Trim());
+                    var sort = line.Split('-').Length > 2 ? line.Split('-')[1].Trim() + "-" + line.Split('-')[2].Trim() : line.Split('-')[1].Trim();
+
+                    if (line.Contains("★"))
+                        countSh.Add(sort);
                 }
             }
             else if (name == "All")
@@ -430,15 +440,20 @@ namespace SysBot.Pokemon.Discord
                 foreach (var line in list)
                 {
                     var sort = line.Split('-').Length > 2 ? line.Split('-')[1].Trim() + "-" + line.Split('-')[2].Trim() : line.Split('-')[1].Trim();
-                    if (!countAll.Contains(sort) && !countAll.Contains("★" + sort))
-                    {
-                        sort = sort.Contains("(Egg)") ? sort.Replace("(Egg)", "").Trim() : sort;
-                        countAll.Add(line.Contains("★") ? "★" + sort : sort);
-                    }
+                    sort = sort.Replace("(Egg)", "").Trim();
+
+                    if (!countAll.Contains(sort) && !line.Contains("★"))
+                        countAll.Add(sort);
+
+                    if (line.Contains("★") && !countShNonDupe.Contains("★" + sort))
+                        countShNonDupe.Add("★" + sort);
 
                     if (line.Contains("★"))
-                        countShAll.Add(line.Split('-').Length > 2 ? line.Split('-')[1].Trim() + "-" + line.Split('-')[2].Trim() : line.Split('-')[1].Trim());
+                        countSh.Add(sort);
                 }
+
+                countAll.RemoveAll(x => countSh.Contains(x));
+                countAll.AddRange(countShNonDupe);
             }
             else
             {
@@ -452,7 +467,7 @@ namespace SysBot.Pokemon.Discord
                 }
             }
 
-            var entry = string.Join(", ", name == "Shinies" ? countShAll.OrderBy(x => x.Substring(0, 1)) : name == "All" ? countAll.OrderBy(x => x.Substring(0, 1)) : count.OrderBy(x => x.Contains('★') ? int.Parse(x.Split('★')[1]) : int.Parse(x)));
+            var entry = string.Join(", ", name == "Shinies" ? countSh.OrderBy(x => x.Contains('★') ? x.Substring(1, 2) : x.Substring(0, 1)) : name == "All" ? countAll.OrderBy(x => x.Contains('★') ? x.Substring(1, 2) : x.Substring(0, 1)) : count.OrderBy(x => x.Contains('★') ? int.Parse(x.Split('★')[1]) : int.Parse(x)));
             if (entry == "")
             {
                 await Context.Message.Channel.SendMessageAsync("No results found.").ConfigureAwait(false);
@@ -460,30 +475,10 @@ namespace SysBot.Pokemon.Discord
             }
 
             var listName = name == "Shinies" ? "Shiny Pokémon" : name == "All" ? "Pokémon" : name == "Egg" ? "Eggs" : "List For " + name;
-            var listCount = name == "Shinies" ? $"★{countShAll.Count}" : name == "All" ? $"{list.Count}, ★{countShAll.Count}" : $"{count.Count}, ★{countSh.Count}";
+            var listCount = name == "Shinies" ? $"★{countSh.Count}" : name == "All" ? $"{list.Count}, ★{countSh.Count}" : $"{count.Count}, ★{countSh.Count}";
             var msg = $"{Context.User.Username}'s {listName} [Total: {listCount}]";
-            if (entry.Length > 1024)
-                entry = entry.AsSpan().Slice(0, 1021).ToString() + "...";
 
-            var embed = new EmbedBuilder { Color = Color.DarkBlue };
-            embed.AddField(x =>
-            {
-                x.Name = msg;
-                x.Value = entry;
-                x.IsInline = false;
-            });
-
-            if (entry.Length == 1024)
-            {
-                embed.AddField(x =>
-                {
-                    x.Name = "Too many results to display!";
-                    x.Value = "Please consider trading or releasing some Pokémon.";
-                    x.IsInline = false;
-                });
-            }
-
-            await Context.Message.Channel.SendMessageAsync(embed : embed.Build()).ConfigureAwait(false);
+            await ListUtil(msg, entry).ConfigureAwait(false);
         }
 
         [Command("TradeCordInfo")]
@@ -984,37 +979,18 @@ namespace SysBot.Pokemon.Discord
             }
 
             List<string> names = new List<string>();
-            foreach (var entry in favorites)
+            foreach (var fav in favorites)
             {
-                List<string> path = Directory.GetFiles(Path.Combine("TradeCord", user)).Where(x => !x.Contains("★") ? x.Split('\\')[2].Split('-')[0].Trim().Equals(entry) : x.Split('\\')[2].Split('-')[0].Replace("★", "").Trim().Equals(entry.Replace("★", "").Trim())).ToList();
+                List<string> path = Directory.GetFiles(Path.Combine("TradeCord", user)).Where(x => !x.Contains("★") ? x.Split('\\')[2].Split('-')[0].Trim().Equals(fav) : x.Split('\\')[2].Split('-')[0].Replace("★", "").Trim().Equals(fav.Replace("★", "").Trim())).ToList();
                 var split = path[0].Split('\\')[2].Trim();
-                names.Add(split.Split('-').Length > 2 ? $"[ID: {entry}] " + split.Split('-')[1].Trim() + "-" + split.Split('-')[2].Replace(".pk8", "").Replace("(Egg)", "").Trim() :
-                    $"[ID: {entry}] " + split.Split('-')[1].Replace(".pk8", "").Replace("(Egg)", "").Trim());
+                names.Add(split.Split('-').Length > 2 ? $"[ID: {fav}] " + split.Split('-')[1].Trim() + "-" + split.Split('-')[2].Replace(".pk8", "").Replace("(Egg)", "").Trim() :
+                    $"[ID: {fav}] " + split.Split('-')[1].Replace(".pk8", "").Replace("(Egg)", "").Trim());
             }
 
-            var msg = string.Join(", ", names);
-            if (msg.Length > 1024)
-                msg = msg.AsSpan().Slice(0, 1021).ToString() + "...";
+            var entry = string.Join(", ", names);
+            var msg = $"{Context.User.Username}'s Favorites";
 
-            var embed = new EmbedBuilder { Color = Color.DarkBlue };
-            embed.AddField(x =>
-            {
-                x.Name = $"{Context.User.Username}'s Favorites";
-                x.Value = msg;
-                x.IsInline = false;
-            });
-
-            if (msg.Length == 1024)
-            {
-                embed.AddField(x =>
-                {
-                    x.Name = "Too many results to display!";
-                    x.Value = "Please consider trading or releasing some Pokémon.";
-                    x.IsInline = false;
-                });
-            }
-
-            await Context.Message.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            await ListUtil(msg, entry).ConfigureAwait(false);
         }
 
         [Command("TradeCordFavorites")]
@@ -1287,6 +1263,107 @@ namespace SysBot.Pokemon.Discord
                 ballRng = "\nBall: Cherish";
 
             return new Tuple<string, string>(formHack, ballRng);
+        }
+
+        private async Task ListUtil(string nameMsg, string entry)
+        {
+            var index = 0;
+            List<string> pageContent = new List<string>();
+            var emptyList = "No results found.";
+            bool canReact = Context.Guild.CurrentUser.GetPermissions(Context.Channel as IGuildChannel).AddReactions;
+            var round = Math.Round((decimal)entry.Length / 1024, MidpointRounding.AwayFromZero);
+
+            if (entry.Length > 1024)
+            {
+                for (int i = 0; i <= round; i++)
+                {
+                    var splice = TradeExtensions.SpliceAtWord(entry, index, 1024);
+                    index += splice.Count;
+                    pageContent.Add(string.Join(", ", splice));
+                }
+            }
+            else pageContent.Add(entry == "" ? emptyList : entry);
+
+            var embed = new EmbedBuilder { Color = Color.DarkBlue }.AddField(x =>
+            {
+                x.Name = nameMsg;
+                x.Value = pageContent[0];
+                x.IsInline = false;
+            }).WithFooter(x =>
+            {
+                x.IconUrl = "https://i.imgur.com/nXNBrlr.png";
+                x.Text = $"Page 1 of {pageContent.Count}";
+            });
+
+            if (!canReact && pageContent.Count > 1)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Missing \"Add Reactions\" Permission";
+                    x.Value = "Displaying only the first page of the list due to embed field limits.";
+                });
+            }
+
+            var msg = await Context.Message.Channel.SendMessageAsync(embed: embed.Build()).ConfigureAwait(false);
+            if (pageContent.Count > 1 && canReact)
+                _ = Task.Run(async () => await ReactionAwait(msg, nameMsg, pageContent).ConfigureAwait(false));
+        }
+
+        private async Task ReactionAwait(RestUserMessage msg, string nameMsg, List<string> pageContent)
+        {
+            int page = 0;
+            var userId = Context.User.Id;
+            IEmote[] reactions = { new Emoji("⬅️"), new Emoji("➡️") };
+            await msg.AddReactionsAsync(reactions).ConfigureAwait(false);
+            var sw = new Stopwatch();
+            sw.Start();
+
+            while (sw.ElapsedMilliseconds < 20_000)
+            {
+                var collectorBack = await msg.GetReactionUsersAsync(reactions[0], 100).FlattenAsync().ConfigureAwait(false);
+                var collectorForward = await msg.GetReactionUsersAsync(reactions[1], 100).FlattenAsync().ConfigureAwait(false);
+                IUser? UserReactionBack = collectorBack.FirstOrDefault(x => x.Id == userId && !x.IsBot);
+                IUser? UserReactionForward = collectorForward.FirstOrDefault(x => x.Id == userId && !x.IsBot);
+
+                if (UserReactionBack != null && page > 0)
+                {
+                    page--;
+                    var embedBack = new EmbedBuilder { Color = Color.DarkBlue }.AddField(x =>
+                    {
+                        x.Name = nameMsg;
+                        x.Value = pageContent[page];
+                        x.IsInline = false;
+                    }).WithFooter(x =>
+                    {
+                        x.IconUrl = "https://i.imgur.com/nXNBrlr.png";
+                        x.Text = $"Page {page + 1 } of {pageContent.Count}";
+                    }).Build();
+
+                    await msg.RemoveReactionAsync(reactions[0], UserReactionBack);
+                    await msg.ModifyAsync(msg => msg.Embed = embedBack).ConfigureAwait(false);
+                    sw.Restart();
+                }
+                else if (UserReactionForward != null && page < pageContent.Count - 1)
+                {
+                    page++;
+                    var embedForward = new EmbedBuilder { Color = Color.DarkBlue }.AddField(x =>
+                    {
+                        x.Name = nameMsg;
+                        x.Value = pageContent[page];
+                        x.IsInline = false;
+                    }).WithFooter(x =>
+                    {
+                        x.IconUrl = "https://i.imgur.com/nXNBrlr.png";
+                        x.Text = $"Page {page + 1} of {pageContent.Count}";
+                    }).Build();
+
+                    await msg.RemoveReactionAsync(reactions[1], UserReactionForward);
+                    await msg.ModifyAsync(msg => msg.Embed = embedForward).ConfigureAwait(false);
+                    sw.Restart();
+                }
+            }
+
+            await msg.RemoveAllReactionsAsync().ConfigureAwait(false);
         }
     }
 }
