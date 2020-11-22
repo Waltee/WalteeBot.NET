@@ -54,63 +54,6 @@ namespace SysBot.Pokemon.Discord
 
         [Command("trade")]
         [Alias("t")]
-        [Summary("Makes the bot trade you a Pokémon converted from the provided Showdown Set.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
-        public async Task TradeAsync([Summary("Trade Code")] int code, [Summary("Showdown Set")][Remainder] string content)
-        {
-            const int gen = 8;
-            content = ReusableActions.StripCodeBlock(content);
-            var set = new ShowdownSet(content);
-            var template = AutoLegalityWrapper.GetTemplate(set);
-
-            if (set.InvalidLines.Count != 0)
-            {
-                var msg = $"Unable to parse Showdown Set:\n{string.Join("\n", set.InvalidLines)}";
-                await ReplyAsync(msg).ConfigureAwait(false);
-                return;
-            }
-
-            var sav = AutoLegalityWrapper.GetTrainerInfo(gen);
-            var pkm = sav.GetLegal(template, out _);
-
-            if (Info.Hub.Config.Trade.DittoTrade && pkm.Species == 132)
-                TradeExtensions.DittoTrade(pkm);
-
-            if (Info.Hub.Config.Trade.EggTrade && pkm.Nickname == "Egg")
-                TradeExtensions.EggTrade((PK8)pkm);
-
-            var la = new LegalityAnalysis(pkm);
-            var spec = GameInfo.Strings.Species[template.Species];
-            var invalid = !(pkm is PK8) || (!la.Valid && SysCordInstance.Self.Hub.Config.Legality.VerifyLegality);
-            if (invalid && !Info.Hub.Config.Trade.Memes)
-            {
-                var imsg = $"Oops! I wasn't able to create something from that. Here's my best attempt for that {spec}!";
-                await Context.Channel.SendPKMAsync(pkm, imsg).ConfigureAwait(false);
-                return;
-            }
-            else if (Info.Hub.Config.Trade.Memes)
-            {
-                if (await TrollAsync(invalid, template).ConfigureAwait(false))
-                    return;
-            }
-
-            pkm.ResetPartyStats();
-            var sig = Context.User.GetFavor();
-            await AddTradeToQueueAsync(code, Context.User.Username, (PK8)pkm, sig).ConfigureAwait(false);
-        }
-
-        [Command("trade")]
-        [Alias("t")]
-        [Summary("Makes the bot trade you a Pokémon converted from the provided Showdown Set.")]
-        [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
-        public async Task TradeAsync([Summary("Showdown Set")][Remainder] string content)
-        {
-            var code = Info.GetRandomTradeCode();
-            await TradeAsync(code, content).ConfigureAwait(false);
-        }
-
-        [Command("trade")]
-        [Alias("t")]
         [Summary("Makes the bot trade you the attached file.")]
         [RequireQueueRole(nameof(DiscordManager.RolesTrade))]
         public async Task TradeAsyncAttach()
