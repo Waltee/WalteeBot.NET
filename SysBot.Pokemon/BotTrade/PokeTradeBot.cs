@@ -154,7 +154,7 @@ namespace SysBot.Pokemon
             await Click(A, 2_000, token).ConfigureAwait(false);
 
             Log("Booting LAN Mode");
-            await Click(L, R, LSTICK, 4_000, token).ConfigureAwait(false);
+            await BootLanMode(6_000, token).ConfigureAwait(false);
 
             Log("Back to Overworld");
             await Click(A, 2_000, token).ConfigureAwait(false);
