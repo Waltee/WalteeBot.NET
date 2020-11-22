@@ -179,15 +179,6 @@ namespace SysBot.Pokemon
             // Confirm Code outside of this method (allow synchronization)
         }
 
-        public async Task EnsureConnectedToYComm(PokeTradeHubConfig config, CancellationToken token)
-        {
-            if (!await IsGameConnectedToYComm(token).ConfigureAwait(false))
-            {
-                Log("Reconnecting to Y-Comm...");
-                await ReconnectToYComm(config, token).ConfigureAwait(false);
-            }
-        }
-
         public async Task<bool> CheckTradePartnerName(TradeMethod tradeMethod, string Name, CancellationToken token)
         {
             var name = await GetTradePartnerName(tradeMethod, token).ConfigureAwait(false);
@@ -199,39 +190,6 @@ namespace SysBot.Pokemon
             var ofs = GetTrainerNameOffset(tradeMethod);
             var data = await Connection.ReadBytesAsync(ofs, 26, Config.ConnectionType, token).ConfigureAwait(false);
             return StringConverter.GetString7(data, 0, 26);
-        }
-
-        public async Task<bool> IsGameConnectedToYComm(CancellationToken token)
-        {
-            // Reads the Y-Comm Flag is the Game is connected Online
-            var data = await Connection.ReadBytesAsync(IsConnectedOffset, 1, Config.ConnectionType, token).ConfigureAwait(false);
-            return data[0] == 1;
-        }
-
-        public async Task ReconnectToYComm(PokeTradeHubConfig config, CancellationToken token)
-        {
-            // Press B in case a Error Message is Present
-            await Click(B, 2000, token).ConfigureAwait(false);
-
-            // Return to Overworld
-            if (!await IsOnOverworld(config, token).ConfigureAwait(false))
-            {
-                for (int i = 0; i < 5; i++)
-                {
-                    await Click(B, 500, token).ConfigureAwait(false);
-                }
-            }
-
-            await Click(Y, 1000, token).ConfigureAwait(false);
-
-            // Press it twice for safety -- sometimes misses it the first time.
-            await Click(PLUS, 2_000, token).ConfigureAwait(false);
-            await Click(PLUS, 5_000 + config.Timings.ExtraTimeReconnectYComm, token).ConfigureAwait(false);
-
-            for (int i = 0; i < 5; i++)
-            {
-                await Click(B, 500, token).ConfigureAwait(false);
-            }
         }
 
         public async Task ExitTrade(PokeTradeHubConfig config, bool unexpected, CancellationToken token)
