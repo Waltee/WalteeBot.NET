@@ -147,6 +147,18 @@ namespace SysBot.Pokemon
                 Log("Still searching, reset bot position.");
                 await ResetTradePosition(Hub.Config, token).ConfigureAwait(false);
             }
+            Log("Opening X-Menu");
+            await Click(X, 2_000, token).ConfigureAwait(false);
+
+            Log("Selecting Options");
+            await Click(A, 2_000, token).ConfigureAwait(false);
+
+            Log("Booting LAN Mode");
+            await Click(L, R, LStick, 4_000, token).ConfigureAwait(false);
+
+            Log("Back to Overworld");
+            await Click(A, 2_000, token).ConfigureAwait(false);
+            await Click(B, 2_000, token).ConfigureAwait(false);
 
             Log("Opening Y-Comm Menu");
             await Click(Y, 2_000, token).ConfigureAwait(false);
