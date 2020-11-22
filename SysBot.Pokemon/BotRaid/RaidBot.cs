@@ -246,9 +246,6 @@ namespace SysBot.Pokemon
 
             if (Hub.Config.Raid.AutoRoll)
                 return;
-
-            await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
-            Log("Reconnected to Y-Comm!");
         }
 
         private async Task DeleteAddFriends(CancellationToken token)
@@ -533,9 +530,6 @@ namespace SysBot.Pokemon
             }
 
             Log("Back in the overworld!");
-            // Reconnect to Y-Comm.
-            await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
-            Log("Reconnected to Y-Comm!");
         }
 
         private void DateSkipClicks()
