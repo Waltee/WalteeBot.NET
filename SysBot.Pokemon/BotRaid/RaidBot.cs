@@ -99,9 +99,6 @@ namespace SysBot.Pokemon
             if (Hub.Config.Raid.AutoRoll && !softLock)
                 await AutoRollDen(token).ConfigureAwait(false);
 
-            // Connect to Y-Comm
-            await EnsureConnectedToYComm(Hub.Config, token).ConfigureAwait(false);
-
             // Press A and stall out a bit for the loading
             await Click(A, 5_000 + Hub.Config.Timings.ExtraTimeLoadRaid, token).ConfigureAwait(false);
 
