@@ -51,7 +51,6 @@ namespace SysBot.Pokemon
                 var task = Config.CurrentRoutineType switch
                 {
                     PokeRoutineType.Idle => DoNothing(token),
-                    PokeRoutineType.SurpriseTrade => DoSurpriseTrades(sav, token),
                     _ => DoTrades(sav, token),
                 };
                 await task.ConfigureAwait(false);
