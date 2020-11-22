@@ -1279,6 +1279,9 @@ namespace SysBot.Pokemon.Discord
                 {
                     var splice = TradeExtensions.SpliceAtWord(entry, index, 1024);
                     index += splice.Count;
+                    if (splice.Count == 0)
+                        break;
+
                     pageContent.Add(string.Join(", ", splice));
                 }
             }
