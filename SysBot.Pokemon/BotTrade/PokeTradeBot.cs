@@ -159,8 +159,7 @@ namespace SysBot.Pokemon
             await Hold(R, token).ConfigureAwait(false);
             await Hold(LSTICK, token).ConfigureAwait(false);
             // Reset delay
-            delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, 50); // 50 ms
-            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
+            await Task.Delay(4_500, token).ConfigureAwait(false);
             // Release the buttons
             await Release(L, token).ConfigureAwait(false);
             await Release(R, token).ConfigureAwait(false);
