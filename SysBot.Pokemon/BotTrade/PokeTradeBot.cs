@@ -154,8 +154,21 @@ namespace SysBot.Pokemon
             await Click(A, 2_000, token).ConfigureAwait(false);
 
             Log("Booting LAN Mode");
-            await BootLanMode(6_000, token).ConfigureAwait(false);
-
+            // Set hold delay
+            var delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, hold);
+            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
+            // Hold the buttons
+            await Connection.SendAsync(SwitchCommand.Hold(L), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Hold(R), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Hold(LSTICK), Config.ConnectionType, token).ConfigureAwait(false);
+            // Reset delay
+            delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, 50); // 50 ms
+            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
+            // Release the buttons
+            await Connection.SendAsync(SwitchCommand.Release(L), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Release(R), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Release(LSTICK), Config.ConnectionType, token).ConfigureAwait(false);
+        
             Log("Back to Overworld");
             await Click(A, 2_000, token).ConfigureAwait(false);
             await Click(B, 2_000, token).ConfigureAwait(false);
