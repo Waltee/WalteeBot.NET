@@ -73,22 +73,22 @@ namespace SysBot.Base
             await Task.Delay(delay);
         }
         
-        public async Task BootLanMode(int hold, CancellationToken token)
+        public async Task BootLanMode(SwitchButton L, SwitchButton R, SwitchButton LSTICK, int hold, CancellationToken token)
         {
             // Set hold delay
             var delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, hold);
-            await Connection.SendAsync(delaycgf, token).ConfigureAwait(false);
+            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
             // Hold the buttons
-            await Connection.SendAsync(SwitchCommand.Hold(SwitchButton.L), token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Hold(SwitchButton.R), token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Hold(SwitchButton.LSTICK), token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Hold(L), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Hold(R), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Hold(LSTICK), Config.ConnectionType, token).ConfigureAwait(false);
             // Reset delay
             delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, 100); // 50 ms
-            await Connection.SendAsync(delaycgf, token).ConfigureAwait(false);
+            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
             // Release the buttons
-            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.L), token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.R), token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.LSTICK), token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.L), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.R), Config.ConnectionType, token).ConfigureAwait(false);
+            await Connection.SendAsync(SwitchCommand.Release(SwitchButton.LSTICK), Config.ConnectionType, token).ConfigureAwait(false);
         }
         
         public async Task DaisyChainCommands(int Delay, SwitchButton[] buttons, CancellationToken token)
