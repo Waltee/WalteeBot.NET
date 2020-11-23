@@ -154,9 +154,6 @@ namespace SysBot.Pokemon
             await Click(A, 2_000, token).ConfigureAwait(false);
 
             Log("Booting LAN Mode");
-            // Set hold delay
-            var delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, hold);
-            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
             // Hold the buttons
             await Hold(L), Config.ConnectionType, token).ConfigureAwait(false);
             await Hold(R), Config.ConnectionType, token).ConfigureAwait(false);
