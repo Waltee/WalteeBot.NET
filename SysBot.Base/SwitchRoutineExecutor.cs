@@ -73,24 +73,6 @@ namespace SysBot.Base
             await Task.Delay(delay);
         }
         
-        public async Task BootLanMode(SwitchButton L, SwitchButton R, SwitchButton B, int hold, CancellationToken token)
-        {
-            // Set hold delay
-            var delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, hold);
-            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
-            // Hold the buttons
-            await Connection.SendAsync(SwitchCommand.Hold(L), Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Hold(R), Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Hold(B), Config.ConnectionType, token).ConfigureAwait(false);
-            // Reset delay
-            delaycgf = SwitchCommand.Configure(SwitchConfigureParameter.buttonClickSleepTime, 50); // 50 ms
-            await Connection.SendAsync(delaycgf, Config.ConnectionType, token).ConfigureAwait(false);
-            // Release the buttons
-            await Connection.SendAsync(SwitchCommand.Release(L), Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Release(R), Config.ConnectionType, token).ConfigureAwait(false);
-            await Connection.SendAsync(SwitchCommand.Release(B), Config.ConnectionType, token).ConfigureAwait(false);
-        }
-        
         public async Task DaisyChainCommands(int Delay, SwitchButton[] buttons, CancellationToken token)
         {
             SwitchCommand.Configure(SwitchConfigureParameter.mainLoopSleepTime, Delay);
